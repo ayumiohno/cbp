@@ -1016,6 +1016,14 @@ class CBP2016_TAGE_SC_L
             return (pred_inter + (((HitBank+1)/4)<<4) + (HighConf<<1) + (LowConf <<2) +((AltBank!=0)<<3)+ ((PC^(PC>>2))<<7)) & ((1<<LOGBIAS) -1);
         }
 
+        bool is_high_conf() {
+            return HighConf;
+        }
+
+        bool is_low_conf() {
+            return LowConf;
+        }
+
         bool predict (uint64_t seq_no, uint8_t piece, UINT64 PC)
         {
             // checkpoint current hist
