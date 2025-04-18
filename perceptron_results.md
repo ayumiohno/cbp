@@ -16,6 +16,7 @@
 ```
 
 # Perceptron
+based on https://github.com/taraeicher/PerceptronBranchPredictor/blob/master/perceptron.cc and ChatGPT.
 ## params
 - perceptron: 1024
 - history: 32
