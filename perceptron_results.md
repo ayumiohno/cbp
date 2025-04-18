@@ -23,7 +23,6 @@ based on https://github.com/taraeicher/PerceptronBranchPredictor/blob/master/per
 - bias/weight: 16-bit
 - total: 64KB
 
-Outperformed over tage-only implementaion for FP, but I think this is coincidence.
 ### FP
 ```
 -------------------------------------DIRECT CONDITIONAL BRANCH PREDICTION MEASUREMENTS (Full Simulation i.e. Counts Not Reset When Warmup Ends)-------------------------------------
@@ -41,6 +40,9 @@ Outperformed over tage-only implementaion for FP, but I think this is coincidenc
 
 ## when combined with tage
 - when the abs(dot) > 2 * thres (confident), use perceptron predictor
+
+Outperformed over tage-only implementaion for FP, but I think this is coincidence.
+
 ### FP
 ```
 -------------------------------------DIRECT CONDITIONAL BRANCH PREDICTION MEASUREMENTS (Full Simulation i.e. Counts Not Reset When Warmup Ends)-------------------------------------
