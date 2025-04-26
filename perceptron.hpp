@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <cassert>
 #include <cstdint>
+#include <map>
 
 struct PerceptronHist {
     uint32_t ghist;
@@ -36,8 +37,8 @@ public:
     bool predict_confidence(uint64_t seq_no, uint8_t piece, uint64_t PC);
 
     void history_update(uint64_t seq_no, uint8_t piece, uint64_t PC, bool taken, uint64_t nextPC);
-    void update(uint64_t seq_no, uint8_t piece, uint64_t PC, bool actual_taken);
-    void update(uint64_t PC, bool actual_taken, const PerceptronHist& hist_to_use);
+    void update(uint64_t seq_no, uint8_t piece, uint64_t PC, bool actual_taken, std::map<int, int>& mp);
+    void update(uint64_t PC, bool actual_taken, const PerceptronHist& hist_to_use, std::map<int, int>& mp);
 
 private:
     int compute_dot_product(const std::vector<int16_t>& w, uint64_t ghist);

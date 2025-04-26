@@ -1,7 +1,7 @@
 #include "perceptron.hpp"
 #include <iostream>
 #include <fstream>
-
+#include <map>
 PerceptronPredictor::PerceptronPredictor(uint64_t num_perceptrons, uint8_t ghist_width)
     : perceptron_count(num_perceptrons), ghist_width(ghist_width)
 {
@@ -65,22 +65,23 @@ void PerceptronPredictor::history_update(uint64_t, uint8_t, uint64_t, bool taken
     // takens.push_back(taken);
 }
 
-void PerceptronPredictor::update(uint64_t seq_no, uint8_t piece, uint64_t PC, bool actual_taken) {
+void PerceptronPredictor::update(uint64_t seq_no, uint8_t piece, uint64_t PC, bool actual_taken, std::map<int, int>& mp) {
     const auto id = get_unique_inst_id(seq_no, piece);
     auto it = pred_time_histories.find(id);
     if (it != pred_time_histories.end()) {
-        update(PC, actual_taken, it->second);
+        update(PC, actual_taken, it->second, mp);
         pred_time_histories.erase(it);
     }
 }
 
-void PerceptronPredictor::update(uint64_t PC, bool actual_taken, const PerceptronHist& hist_to_use) {
+void PerceptronPredictor::update(uint64_t PC, bool actual_taken, const PerceptronHist& hist_to_use, std::map<int, int>& mp) {
     uint64_t index = PC % perceptron_count;
     auto& w = weights[index];
     int t = actual_taken ? 1 : -1;
     int y = compute_dot_product(w, hist_to_use.ghist);
     bool pred = y >= 0;
-
+    if (pred != actual_taken)
+        ++mp[PC];;
     if (pred != actual_taken || abs(y) <= theta) {
         w[0] += t; // bias
         for (int i = 0; i < ghist_width; ++i) {

@@ -30,8 +30,8 @@ CPPFLAGS = -std=c++17 $(OPT)
 
 # OBJ = cond_branch_predictor_interface.o my_cond_branch_predictor.o
 # DEPS = cbp.h cond_branch_predictor_interface.h my_cond_branch_predictor.h
-OBJ = cond_branch_predictor_interface.o piecewise_perceptron.o perceptron.o
-DEPS = cbp.h cond_branch_predictor_interface.h piecewise_perceptron.hpp perceptron.hpp
+OBJ = cond_branch_predictor_interface.o piecewise_perceptron.o perceptron.o hierarchical_perceptron.o
+DEPS = cbp.h cond_branch_predictor_interface.h piecewise_perceptron.hpp perceptron.hpp hierarchical_perceptron.hpp
 
 DEBUG=0
 ifeq ($(DEBUG), 1)
