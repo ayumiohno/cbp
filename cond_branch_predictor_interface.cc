@@ -39,11 +39,11 @@ std::map<int, ExecuteInfo> execs;
 void beginCondDirPredictor()
 {
     // setup sample_predictor
-    // cbp2016_tage_sc_l.setup();
+    cbp2016_tage_sc_l.setup();
     // cond_predictor_impl.setup();
     // perceptron_predctor_impl.setup();
     // piecewise_perceptron_predctor_impl.setup();
-    hiearchical_perceptron_predctor_impl.setup();
+    // hiearchical_perceptron_predctor_impl.setup();
 }
 
 //
@@ -66,16 +66,16 @@ void notify_instr_fetch(uint64_t seq_no, uint8_t piece, uint64_t pc, const uint6
 bool get_cond_dir_prediction(uint64_t seq_no, uint8_t piece, uint64_t pc, const uint64_t pred_cycle)
 {
     ++total[pc];
-    // const bool tage_sc_l_pred =  cbp2016_tage_sc_l.predict(seq_no, piece, pc);
+    const bool tage_sc_l_pred =  cbp2016_tage_sc_l.predict(seq_no, piece, pc);
     // const bool tage_sc_l_pred_conf = cbp2016_tage_sc_l.is_low_conf();
 
     // const bool my_prediction = perceptron_predctor_impl.predict(seq_no, piece, pc);
     // const bool my_prediction_conf = perceptron_predctor_impl.predict_confidence(seq_no, piece, pc);
     // const bool my_prediction = piecewise_perceptron_predctor_impl.predict(seq_no, piece, pc);
     // const bool my_prediction_conf = piecewise_perceptron_predctor_impl.predict_confidence(seq_no, piece, pc);
-    const bool my_prediction = hiearchical_perceptron_predctor_impl.predict(seq_no, piece, pc);
-    return my_prediction;
+    // const bool my_prediction = hiearchical_perceptron_predctor_impl.predict(seq_no, piece, pc);
     // return my_prediction;
+    return tage_sc_l_pred;
     // return my_prediction_conf ? my_prediction : tage_sc_l_pred;
     // return tage_sc_l_pred_conf ?  my_prediction : tage_sc_l_pred;
 }
@@ -119,14 +119,14 @@ void spec_update(uint64_t seq_no, uint8_t piece, uint64_t pc, InstClass inst_cla
 
     if(inst_class == InstClass::condBranchInstClass)
     {
-        // cbp2016_tage_sc_l.history_update(seq_no, piece, pc, br_type, pred_dir, resolve_dir, next_pc);
+        cbp2016_tage_sc_l.history_update(seq_no, piece, pc, br_type, pred_dir, resolve_dir, next_pc);
         // perceptron_predctor_impl.history_update(seq_no, piece, pc, resolve_dir, next_pc);
         // piecewise_perceptron_predctor_impl.history_update(seq_no, piece, pc, resolve_dir, next_pc);
-        hiearchical_perceptron_predctor_impl.history_update(seq_no, piece, pc, resolve_dir, next_pc);
+        // hiearchical_perceptron_predctor_impl.history_update(seq_no, piece, pc, resolve_dir, next_pc);
     }
     else
     {
-        // cbp2016_tage_sc_l.TrackOtherInst(pc, br_type, pred_dir, resolve_dir, next_pc);
+        cbp2016_tage_sc_l.TrackOtherInst(pc, br_type, pred_dir, resolve_dir, next_pc);
     }
 
 }
@@ -171,10 +171,10 @@ void notify_instr_execute_resolve(uint64_t seq_no, uint8_t piece, uint64_t pc, c
         {
             const bool _resolve_dir = _exec_info.taken.value();
             const uint64_t _next_pc = _exec_info.next_pc;
-            // cbp2016_tage_sc_l.update(seq_no, piece, pc, _resolve_dir, pred_dir, _next_pc);
+            cbp2016_tage_sc_l.update(seq_no, piece, pc, _resolve_dir, pred_dir, _next_pc);
             // perceptron_predctor_impl.update(seq_no, piece, pc, _resolve_dir, miss);
             // piecewise_perceptron_predctor_impl.update(seq_no, piece, pc, _resolve_dir);
-            hiearchical_perceptron_predctor_impl.update(seq_no, piece, pc, _resolve_dir);
+            // hiearchical_perceptron_predctor_impl.update(seq_no, piece, pc, _resolve_dir);
         }
         else
         {
@@ -202,10 +202,10 @@ void notify_instr_commit(uint64_t seq_no, uint8_t piece, uint64_t pc, const bool
 //
 void endCondDirPredictor ()
 {
-    // cbp2016_tage_sc_l.terminate();
+    cbp2016_tage_sc_l.terminate();
     // cond_predictor_impl.terminate();
     // perceptron_predctor_impl.terminate();
-    hiearchical_perceptron_predctor_impl.terminate();
+    // hiearchical_perceptron_predctor_impl.terminate();
     // for (auto [pc, cnt] : total) {
     //     std::cout << miss[pc] << "," << cnt << "," << pc << std::endl;
     // }

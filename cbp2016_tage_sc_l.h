@@ -268,6 +268,9 @@ class lentry            //loop predictor entry
 };
 
 //For the TAGE predictor
+using Perceptron = std::vector<int8_t>; // [history][hash_index]
+std::vector<Perceptron> ptable; // perceptron weights
+
 bentry *btable;         //bimodal TAGE table
 gentry *gtable[NHIST + 1];  // tagged TAGE tables
 //lentry *ltable;
@@ -570,6 +573,7 @@ class CBP2016_TAGE_SC_L
             for (int i = 2; i <= BORN - 1; i++)
                 gtable[i] = gtable[1];
             btable = new bentry[1 << LOGB];
+            ptable.resize(1 << LOGB, Perceptron(32 + 1, 0)); // +1 for bias
 
             for (int i = 1; i <= NHIST; i++)
             {
@@ -853,28 +857,58 @@ class CBP2016_TAGE_SC_L
         }
 
 
-        bool getbim ()
+        bool getbim (uint64_t ghist)
         {
-            BIM = (btable[BI].pred << 1) + (btable[BI >> HYSTSHIFT].hyst);
-            HighConf = (BIM == 0) || (BIM == 3);
+            // BIM = (btable[BI].pred << 1) + (btable[BI >> HYSTSHIFT].hyst);
+            // HighConf = (BIM == 0) || (BIM == 3);
+            // LowConf = !HighConf;
+            // AltConf = HighConf;
+            // MedConf = false;
+            // return (btable[BI].pred > 0);
+
+            int result = ptable[BI][0];
+            for (int i = 0; i < 32; ++i) {
+                int bit = (ghist >> i) & 1;
+                result += ptable[BI][i + 1] * (bit ? 1 : -1);
+            }
+            HighConf = (abs(result) >  1.93 * 32 + 14);
             LowConf = !HighConf;
             AltConf = HighConf;
             MedConf = false;
-            return (btable[BI].pred > 0);
+            return (result > 0);
         }
 
-        void baseupdate (bool Taken)
+        void baseupdate (bool Taken, uint64_t ghist)
         {
-            int inter = BIM;
-            if (Taken)
-            {
-                if (inter < 3)
-                    inter += 1;
+            // int inter = BIM;
+            // if (Taken)
+            // {
+            //     if (inter < 3)
+            //         inter += 1;
+            // }
+            // else if (inter > 0)
+            //     inter--;
+            // btable[BI].pred = inter >> 1;
+            // btable[BI >> HYSTSHIFT].hyst = (inter & 1);
+
+            int result = ptable[BI][0];
+            for (int i = 0; i < 32; ++i) {
+                int bit = (ghist >> i) & 1;
+                result += ptable[BI][i + 1] * (bit ? 1 : -1);
             }
-            else if (inter > 0)
-                inter--;
-            btable[BI].pred = inter >> 1;
-            btable[BI >> HYSTSHIFT].hyst = (inter & 1);
+            bool pred = result >= 0;
+            bool t = Taken ? 1 : -1;
+            if (pred != Taken || abs(result) <= 1.93 * 32 + 14) {
+                ptable[BI][0] += t;
+                for (int i = 0; i < 32; ++i) {
+                    int bit = (ghist >> i) & 1;
+                    if ((bit ? t : -t) == 1 && ptable[BI][i + 1] >= 127)
+                        continue;
+                    if ((bit ? t : -t) == -1 && ptable[BI][i + 1] <= -127)
+                        continue;
+                    ptable[BI][i + 1] += (bit ? t : -t);
+                }
+            }
         };
 
         //just a simple pseudo random number generator: use available information
@@ -926,7 +960,7 @@ class CBP2016_TAGE_SC_L
             BI = (PC ^ (PC >> 2)) & ((1 << LOGB) - 1);
 
             {
-                alttaken = getbim ();
+                alttaken = getbim(hist_to_use.GHIST);
                 tage_pred = alttaken;
                 LongestMatchPred = alttaken;
             }
@@ -965,7 +999,7 @@ class CBP2016_TAGE_SC_L
 
                 }
                 else
-                    alttaken = getbim ();
+                    alttaken = getbim(hist_to_use.GHIST);
 
                 //if the entry is recognized as a newly allocated entry and 
                 //USE_ALT_ON_NA is positive  use the alternate prediction
@@ -1545,7 +1579,7 @@ class CBP2016_TAGE_SC_L
                                     resolveDir, CWIDTH);
                         }
                         if (AltBank == 0)
-                            baseupdate (resolveDir);
+                            baseupdate (resolveDir, hist_to_use.GHIST);
 
                     }
                 ctrupdate (gtable[HitBank][GI[HitBank]].ctr, resolveDir, CWIDTH);
@@ -1565,7 +1599,7 @@ class CBP2016_TAGE_SC_L
             }
 
             else
-                baseupdate (resolveDir);
+                baseupdate (resolveDir, hist_to_use.GHIST);
 
             if (LongestMatchPred != alttaken)
                 if (LongestMatchPred == resolveDir)
