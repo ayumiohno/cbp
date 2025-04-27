@@ -862,26 +862,19 @@ class CBP2016_TAGE_SC_L
         bool getbim (uint64_t ghist)
         {
             BIM = (btable[BI].pred << 1) + (btable[BI >> HYSTSHIFT].hyst);
-            HighConf = (BIM == 0) || (BIM == 3);
-            if (HighConf) {
-                LowConf = !HighConf;
-                AltConf = HighConf;
-                MedConf = false;
-                return (btable[BI].pred > 0);
-            }
+            bool bconf = (BIM == 0) || (BIM == 3);
 
             int result = ptable[BI][0];
             for (int i = 0; i < PERCEPTRON_HIST; ++i) {
                 int bit = (ghist >> i) & 1;
                 result += ptable[BI][i + 1] * (bit ? 1 : -1);
             }
-            HighConf = (abs(result) >  (1.93 * PERCEPTRON_HIST + 14));
-            if (true) {
-                LowConf = !HighConf;
-                AltConf = HighConf;
-                MedConf = false;
-                return (result >= 0);
-            }
+            bool pconf = (abs(result) >  (1.93 * PERCEPTRON_HIST + 14));
+            HighConf = (bconf && pconf) && ((result >= 0) == (btable[BI].pred > 0));
+            LowConf = !HighConf;
+            AltConf = HighConf;
+            MedConf = false;
+            return (result >= 0);
         }
 
         void baseupdate (bool Taken, uint64_t ghist)
@@ -1298,7 +1291,7 @@ class CBP2016_TAGE_SC_L
 
         void update (UINT64 PC, bool resolveDir, bool pred_taken, UINT64 nextPC, const cbp_hist_t& hist_to_use)
         {
-            // baseupdate (resolveDir, hist_to_use.GHIST);
+            baseupdate (resolveDir, hist_to_use.GHIST);
 #ifdef SC
 #ifdef LOOPPREDICTOR
             if(pred_taken != resolveDir)  // incorrect loophhist updates in spec_update
@@ -1588,8 +1581,8 @@ class CBP2016_TAGE_SC_L
                             ctrupdate (gtable[AltBank][GI[AltBank]].ctr,
                                     resolveDir, CWIDTH);
                         }
-                        if (AltBank == 0)
-                            baseupdate (resolveDir, hist_to_use.GHIST);
+                        // if (AltBank == 0)
+                        //     baseupdate (resolveDir, hist_to_use.GHIST);
 
                     }
                 ctrupdate (gtable[HitBank][GI[HitBank]].ctr, resolveDir, CWIDTH);
@@ -1608,8 +1601,8 @@ class CBP2016_TAGE_SC_L
                             }
             }
 
-            else
-                baseupdate (resolveDir, hist_to_use.GHIST);
+            // else
+            //     baseupdate (resolveDir, hist_to_use.GHIST);
 
             if (LongestMatchPred != alttaken)
                 if (LongestMatchPred == resolveDir)
