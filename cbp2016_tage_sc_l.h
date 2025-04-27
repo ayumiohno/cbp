@@ -244,6 +244,8 @@ int TICK;           // for the reset of the u counter
 //folded_history ch_i[NHIST + 1];   //utility for computing TAGE indices
 //folded_history ch_t[2][NHIST + 1];    //utility for computing TAGE tags
 
+#define PERCEPTRON_HIST 32
+
 class lentry            //loop predictor entry
 {
     public:
@@ -573,7 +575,7 @@ class CBP2016_TAGE_SC_L
             for (int i = 2; i <= BORN - 1; i++)
                 gtable[i] = gtable[1];
             btable = new bentry[1 << LOGB];
-            ptable.resize(1 << LOGB, Perceptron(32 + 1, 0)); // +1 for bias
+            ptable.resize(1 << LOGB, Perceptron(PERCEPTRON_HIST + 1, 0)); // +1 for bias
 
             for (int i = 1; i <= NHIST; i++)
             {
@@ -859,48 +861,55 @@ class CBP2016_TAGE_SC_L
 
         bool getbim (uint64_t ghist)
         {
-            // BIM = (btable[BI].pred << 1) + (btable[BI >> HYSTSHIFT].hyst);
-            // HighConf = (BIM == 0) || (BIM == 3);
-            // LowConf = !HighConf;
-            // AltConf = HighConf;
-            // MedConf = false;
-            // return (btable[BI].pred > 0);
+            BIM = (btable[BI].pred << 1) + (btable[BI >> HYSTSHIFT].hyst);
+            HighConf = (BIM == 0) || (BIM == 3);
+            if (HighConf) {
+                LowConf = !HighConf;
+                AltConf = HighConf;
+                MedConf = false;
+                return (btable[BI].pred > 0);
+            }
 
             int result = ptable[BI][0];
-            for (int i = 0; i < 32; ++i) {
+            for (int i = 0; i < PERCEPTRON_HIST; ++i) {
                 int bit = (ghist >> i) & 1;
                 result += ptable[BI][i + 1] * (bit ? 1 : -1);
             }
-            HighConf = (abs(result) >  1.93 * 32 + 14);
-            LowConf = !HighConf;
-            AltConf = HighConf;
-            MedConf = false;
-            return (result > 0);
+            HighConf = (abs(result) >  (1.93 * PERCEPTRON_HIST + 14));
+            if (true) {
+                LowConf = !HighConf;
+                AltConf = HighConf;
+                MedConf = false;
+                return (result >= 0);
+            }
         }
 
         void baseupdate (bool Taken, uint64_t ghist)
         {
-            // int inter = BIM;
-            // if (Taken)
-            // {
-            //     if (inter < 3)
-            //         inter += 1;
-            // }
-            // else if (inter > 0)
-            //     inter--;
-            // btable[BI].pred = inter >> 1;
-            // btable[BI >> HYSTSHIFT].hyst = (inter & 1);
+            int inter = BIM;
+            if (Taken)
+            {
+                if (inter < 3)
+                    inter += 1;
+            }
+            else if (inter > 0)
+                inter--;
+            btable[BI].pred = inter >> 1;
+            btable[BI >> HYSTSHIFT].hyst = (inter & 1);
 
             int result = ptable[BI][0];
-            for (int i = 0; i < 32; ++i) {
+            for (int i = 0; i < PERCEPTRON_HIST; ++i) {
                 int bit = (ghist >> i) & 1;
                 result += ptable[BI][i + 1] * (bit ? 1 : -1);
             }
             bool pred = result >= 0;
             bool t = Taken ? 1 : -1;
-            if (pred != Taken || abs(result) <= 1.93 * 32 + 14) {
-                ptable[BI][0] += t;
-                for (int i = 0; i < 32; ++i) {
+            if (pred != Taken || abs(result) <= 1.93 * PERCEPTRON_HIST + 14) {
+                if (t == 1 && ptable[BI][0] < 127)
+                    ptable[BI][0] += 1;
+                if (t == -1 && ptable[BI][0] > -127)
+                    ptable[BI][0] -= 1;
+                for (int i = 0; i < PERCEPTRON_HIST; ++i) {
                     int bit = (ghist >> i) & 1;
                     if ((bit ? t : -t) == 1 && ptable[BI][i + 1] >= 127)
                         continue;
@@ -1289,6 +1298,7 @@ class CBP2016_TAGE_SC_L
 
         void update (UINT64 PC, bool resolveDir, bool pred_taken, UINT64 nextPC, const cbp_hist_t& hist_to_use)
         {
+            // baseupdate (resolveDir, hist_to_use.GHIST);
 #ifdef SC
 #ifdef LOOPPREDICTOR
             if(pred_taken != resolveDir)  // incorrect loophhist updates in spec_update

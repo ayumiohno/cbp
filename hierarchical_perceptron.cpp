@@ -68,7 +68,7 @@ std::pair<int, int> HiearchicalPredictor::compute_dot_product(const std::vector<
     int result = scores[0];
     int best_idx = 0;
     int max_conf = perceptron_weights[ghist_widths[0] + 1][0];
-    for (int index = 1; index < 4; index++)
+    for (int index = 0; index < 4; index++)
     {
         int my_conf = perceptron_weights[ghist_widths[index] + 1][index];
         if (my_conf >= max_conf)
@@ -141,9 +141,9 @@ void HiearchicalPredictor::update(uint64_t PC, bool actual_taken, const Piecewis
             {
                 int bit = (hist.ghist >> i) & 1;
                 int input = bit ? +1 : -1;
-                if (perceptron_weights[i + 1][idx] >= 63 && t == 1)
+                if (perceptron_weights[i + 1][idx] >= 127 && t * input == 1)
                     continue;
-                if (perceptron_weights[i + 1][idx] <= -63 && t == -1)
+                if (perceptron_weights[i + 1][idx] <= -127 && t * input == -1)
                     continue;
                 perceptron_weights[i + 1][idx] += t * input;
             }
@@ -151,7 +151,7 @@ void HiearchicalPredictor::update(uint64_t PC, bool actual_taken, const Piecewis
         if (pred == actual_taken)
         {
             // std::cout << "hit" << perceptron_weights[ghist_widths[idx] + 1][idx] << std::endl;
-            if (perceptron_weights[ghist_widths[idx] + 1][idx] >= 63)
+            if (perceptron_weights[ghist_widths[idx] + 1][idx] >= 127)
                 continue;
             perceptron_weights[ghist_widths[idx]+1][idx] += 1;
         } 
